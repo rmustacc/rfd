@@ -1,0 +1,145 @@
+MAC_CAPAB_LED(9E)             Driver Entry Points            MAC_CAPAB_LED(9E)
+
+NNAAMMEE
+     MMAACC__CCAAPPAABB__LLEEDD, mmaacc__ccaappaabb__lleedd, mmaacc__ccaappaabb__lleedd__tt, mmccll__sseett - MAC LED
+     capability
+
+SSYYNNOOPPSSIISS
+     ##iinncclluuddee <<ssyyss//mmaacc__pprroovviiddeerr..hh>>
+
+     _t_y_p_e_d_e_f _s_t_r_u_c_t _m_a_c___c_a_p_a_b___l_e_d _m_a_c___c_a_p_a_b___l_e_d___t_;
+     _t_y_p_e_d_e_f _e_n_u_m _m_a_c___l_e_d___m_o_d_e _m_a_c___l_e_d___m_o_d_e___t_;
+
+     _i_n_t
+     mmccll__sseett(_v_o_i_d _*_d_r_i_v_e_r, _m_a_c___l_e_d___m_o_d_e___t _m_o_d_e, _u_i_n_t___t _f_l_a_g_s);
+
+IINNTTEERRFFAACCEE LLEEVVEELL
+     EEvvoollvviinngg -- This interface is evolving still in illumos. API and ABI
+     stability is not guaranteed.
+
+PPAARRAAMMEETTEERRSS
+     _d_r_i_v_e_r        A pointer to the driver's private data that was passed in
+                   via the mm__ppddaattaa member of the mac_register(9S) structure to
+                   the mac_register(9F) function.
+
+     _m_o_d_e          A value that indicates how the driver should drive the
+                   LEDs.
+
+     _f_l_a_g_s         Reserved for future use.  _L_E_D _M_o_d_e_s.
+
+DDEESSCCRRIIPPTTIIOONN
+     The MMAACC__CCAAPPAABB__LLEEDD provides a means for GLDv3 device drivers to change the
+     behavior of the LEDs, allowing an administrator to change the behavior
+     for the purpose of better finding and identifying a physical device.
+
+     Implementing this capability is optional. For more information on how to
+     handle capabilities and how to indicate that a capability is not
+     supported, see mc_getcapab(9E).
+
+     This capability should be implemented if the device in question provides
+     a way to manipulate its LEDs. Generally the LEDs on a device default to
+     indicating link status and activity. However, they can often be turned
+     off or set to a specific pattern to indicate identification purposes.
+
+   LLEEDD MMOODDEESS
+     The system has a notion of different LED modes. Each LED mode suggests a
+     different way that a device driver should drive the indicator LEDs on the
+     device. While we generally want all such LED modes to be as uniform as
+     possible, there is a limit to such similarities due to the capabilities
+     of NICs. Each mode is a member of the _m_a_c___l_e_d___m_o_d_e___t enumeration. The
+     currently defined modes are:
+
+           MAC_LED_DEFAULT
+                         This mode indicates that the device's default
+                         behavior should be used.  This is usually some form
+                         of link status and activity. It is device specific
+                         and usually is the default behavior after a device is
+                         powered on.
+
+           MAC_LED_OFF   This mode indicates that the device's LEDs should be
+                         turned off and not emit any light.
+
+           MAC_LED_IDENT
+                         This mode indicates that the driver should emit some
+                         form of identication pattern. We suggest that devices
+                         indicate some form of solid blinking light that is on
+                         and off at alternating units of time. If it is
+                         possible to use an alternate color from the normal
+                         link up and activity lighting, that is recommended.
+
+   MMAACC CCaappaabbiilliittyy SSttrruuccttuurree
+     When the device driver's mc_getcapab(9E) function entry point is called
+     with the capability set to MAC_CAPAB_LED, then the value of the
+     capability structure is the following structure:
+
+           typedef struct mac_capab_led {
+                   uint_t          mcl_flags;
+                   mac_led_mode_t  mcl_modes;
+                   int             (*mcl_set)(void *driver, mac_led_mode_t mode,
+                                       uint_t flags);
+           } mac_capab_led_t;
+
+     If the driver supports the MAC_CAPAB_LED capability, it should fill in
+     this structure, based on the following rules:
+
+     mmccll__ffllaaggss
+             The _m_c_l___f_l_a_g_s member is used to negotiate extensions with the
+             driver. MAC will set the value of _m_c_l___f_l_a_g_s to include all of the
+             currently known extensions. The driver should intersect this list
+             with the set that they actually support. At this time, no such
+             features are defined and the driver should set the member to 00.
+
+     mmccll__mmooddeess
+             The _m_c_l___m_o_d_e_s member represents the support modes of the device
+             driver. The device driver should set _m_c_l___m_o_d_e_s to the bitwise-
+             inclusive-OR of the LED modes listed in _L_E_D _M_O_D_E_S.
+
+             If the driver does not support anything other than the default
+             behavior of MAC_LED_DEFAULT, then the device driver should not
+             indicate that it supports this capability.
+
+     mmccll__sseett
+             The _m_c_t___s_e_t entry point will be called by the MAC framework when
+             it needs the device driver to change how it is driving its LEDs.
+             Each call will ask the driver to change the display mode to the
+             specified mode. The driver does not have to multiplex requests
+             for multiple modes or keep track of what has been requested, that
+             is taken care of by the system itself.
+
+             The driver should first validate that _m_o_d_e is a mode that it
+             supports. While the device reports the set of supported modes as
+             a bitwise-inclusive-OR, the driver should only receive a single
+             value in _m_o_d_e.  The value of the _f_l_a_g_s argument is reserved for
+             future use. Drivers must check that the value of flags is zero
+             and if not, return EINVAL.
+
+             When this entry point is first called on a driver, it should
+             snapshot its device registers such that it knows how to restore
+             the default behavior. Because each method of programming the LEDs
+             is different, it is up to the driver itself to take care of this,
+             the broader framework cannot take care of it.
+
+             If for some reason the driver is asked to program the same mode
+             as it is already driving, then it need not do anything and should
+             simply return success.
+
+             Once the driver successfully changes the LED driving mode, it
+             should return 00.  Otherwise, it should return the appropriate
+             error number. For a full list of error numbers, see Intro(2).
+             Common values are:
+
+                  EINVAL             _m_o_d_e is unsupported.  _f_l_a_g_s contains an
+                                     unsupported or unknown value.
+
+                  EIO                An I/O error occurred while trying to
+                                     program the device's registers.  This
+                                     could be because a command timed out or
+                                     an FM-aware driver encountered an error.
+
+CCOONNTTEEXXTT
+     The _m_c_l___s_e_t entry point will only be called from uusseerr or kkeerrnneell context.
+     It will never be called from interrupt context.
+
+SSEEEE AALLSSOO
+
+illumos                        February 21, 2017                       illumos

@@ -1,0 +1,69 @@
+MAC_TRANSCEIVER_INFO(9F)                          Kernel Functions for Drivers
+
+NNAAMMEE
+     mmaacc__ttrraannsscceeiivveerr__iinnffoo, mmaacc__ttrraannsscceeiivveerr__iinnffoo__sseett__kkiinndd,
+     mmaacc__ttrraannsscceeiivveerr__iinnffoo__sseett__pprreesseenntt, mmaacc__ttrraannsscceeiivveerr__iinnffoo__sseett__uussaabbllee - set
+     MAC transceiver property information
+
+SSYYNNOOPPSSIISS
+     ##iinncclluuddee <<ssyyss//mmaacc__pprroovviiddeerr..hh>>
+
+     _v_o_i_d
+     mmaacc__ttrraannsscceeiivveerr__sseett__ttyyppee(_m_a_c___t_r_a_n_s_c_e_i_v_e_r___i_n_f_o___t _*_i_n_f_o_p,
+         _m_a_c___t_r_a_n_s_c_e_i_v_e_r___k_i_n_d___t _k_i_n_d);
+
+     _v_o_i_d
+     mmaacc__ttrraannsscceeiivveerr__iinnffoo__sseett__pprreesseenntt(_m_a_c___t_r_a_n_s_c_e_i_v_e_r___i_n_f_o___t _*_i_n_f_o_p,
+         _b_o_o_l_e_a_n___t _p_r_e_s_e_n_t);
+
+     _v_o_i_d
+     mmaacc__ttrraannsscceeiivveerr__iinnffoo__sseett__uussaabbllee(_m_a_c___t_r_a_n_s_c_e_i_v_e_r___i_n_f_o___t _*_i_n_f_o_p,
+         _b_o_o_l_e_a_n___t _u_s_a_b_l_e);
+
+IINNTTEERRFFAACCEE LLEEVVEELL
+     EEvvoollvviinngg -- This interface is evolving still in illumos. API and ABI
+     stability is not guaranteed.
+
+PPAARRAAMMEETTEERRSS
+     _i_n_f_o_p         A pointer to an opaque structure obtained as an argument to
+                   the mct_info(9E) entry point.
+
+     _k_i_n_d          An enumeration that indicates the kind of transceiver
+                   present.
+
+     _p_r_e_s_e_n_t       A boolean that indicates whether the transceiver is
+                   present.
+
+     _u_s_a_b_l_e        A boolean that indicates whether the transceiver is usable.
+
+DDEESSCCRRIIPPTTIIOONN
+     The mmaacc__ttrraannsscceeiivveerr__sseett__ttyyppee(), mmaacc__ttrraannsscceeiivveerr__sseett__pprreesseenntt(), and
+     mmaacc__ttrraannsscceeiivveerr__sseett__uussaabbllee() functions are used to set information about
+     a transceiver as part of the mct_info(9E) entry point to obtain
+     information about a MAC transceiver. For more information and background,
+     see the TTrraannsscceeiivveerr IInnffoorrmmaattiioonn FFuunnccttiioonnss section of
+     mac_capab_transceiver(9E).
+
+     The mmcctt__ttrraannsscceeiivveerr__sseett__ttyyppee() function sets the transceiver's type. A
+     list of valid values for the type is available in
+     mac_capab_transceiver(9E).
+
+     The mmcctt__ttrraannsscceeiivveerr__sseett__pprreesseenntt() function sets whether or not the
+     transceiver is present and plugged into the system. If the transceiver is
+     not plugged in, then the function should be called with _p_r_e_s_e_n_t _s_e_t _t_o
+     B_FALSE, otehrwise it should use B_TRUE.
+
+     The mmcctt__ttrraannsscceeiivveerr__sseett__uussaabbllee() function determines whether or not the
+     device can use the transceiver.  If the device cannot use the
+     transceiver, then it should call the function with _u_s_a_b_l_e set to B_FALSE.
+     Otherwise, it should use B_TRUE.  If the transceiver is not present, then
+     this function should not be called.
+
+CCOONNTTEEXXTT
+     These functions should be called in response to handling the mmcctt__iinnffoo(_9_E)
+     entry point for transceivers in kkeerrnneell context.
+
+SSEEEE AALLSSOO
+     mac(9E), mac_capab_transceiver(9E), mct_info(9E)
+
+illumos                        February 21, 2017                       illumos

@@ -10,7 +10,7 @@ state: predraft
 -->
 
 <!--
-    Copyright 2015 Joyent Inc.
+    Copyright 2017 Joyent Inc.
 -->
 
 # RFD 88 DC and Hardware Management Futures

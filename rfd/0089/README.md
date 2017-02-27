@@ -1,3 +1,18 @@
+---
+authors: Robert Mustacchi <rm@joyent.com>
+state: predraft
+---
+
+<!--
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+    Copyright 2017 Joyent Inc.
+-->
+
 # RFD 89 Project Tiresias
 
 We need to have a fresh view on visibility inside of the chassis and

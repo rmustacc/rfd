@@ -759,6 +759,6 @@ impacted.
 
 ## See Also
 
-[RFD 6 Improving Triton and Manta RAS Infrastructure](../0006/)
-[RFD 7 Datalink LLDP and State Tracking](../0007/)
-[RFD 88 DC and Hardware Management Futures](../0088/)
+* [RFD 6 Improving Triton and Manta RAS Infrastructure](../0006/)
+* [RFD 7 Datalink LLDP and State Tracking](../0007/)
+* [RFD 88 DC and Hardware Management Futures](../0088/)

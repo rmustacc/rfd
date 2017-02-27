@@ -558,7 +558,7 @@ fill out the structures, and additional support functions that are going
 to be provided, first review the draft manual page
 [mac_capab_transceiver(9E)](./man/mac_capab_transceiver.9e.pdf). The
 suport functions that drivers have are avaiable in
-[mac_transceiver_info(9F)](./man/mac_transceiver_info.9e.pdf).
+[mac_transceiver_info(9F)](./man/mac_transceiver_info.9f.pdf).
 
 The interface that topo and others will use to fetch this information is
 still to be determined and will be a private interface. This may just
@@ -570,12 +570,15 @@ over time.
 
 | Driver | info | read | Have HW | planned |
 | -----  | ---- | ---- | ------- | ------- |
-| bnxe | yes | yes | no* | 
+| bnxe | yes | yes | no+ | no |
 | cxgbe | yes | yes | yes | yes | 
-| igb | yes | yes | no* | 
+| igb | yes | yes | no+ | no |
 | ixgbe | yes | yes | yes | yes | 
 | i40e | yes | no | yes | yes | 
 | sfxge | yes | yes | no | no* |
+
+Items marked with a `+` indicate that we have hardware, but not hardware
+that accepts transceivers.
 
 Items noted with `no*` in the `planned` column are because we do not
 have hardware for these devices that supports this mode of operation.

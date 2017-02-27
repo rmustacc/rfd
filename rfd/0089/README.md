@@ -399,7 +399,7 @@ ddi_ufm_update(ddi_ufm_handle_t *);
 All of these functions and more are documented in the following series
 of draft manual pages:
 
-* [ddi_ufm(9E)](XXX)
+* [ddi_ufm(9E)](./man/ddi_ufm.9e.pdf)
 * [ddi_ufm(9F)](XXX)
 * [ddi_ufm_image(9F)](XXX)
 * [ddi_ufm_slot(9F)](XXX)

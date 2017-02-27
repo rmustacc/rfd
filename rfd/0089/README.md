@@ -20,7 +20,8 @@ being able to manipulate things inside of it. Like a classic Greek
 Oracle, we need to be able to see inside to the best of our ability,
 even if there is some uncertainty. 
 
-For more background into the motivation, please see RFD XXX, which
+For more background into the motivation, please see [RFD 88 DC and
+Hardware Management Futures](../0088/), which
 discusses the next generation of challenges around DC management. This
 RFD explicitly tackles portions that lead to enhanced visibility of
 what's inside the chassis and allowing for identification of parts via
@@ -93,7 +94,7 @@ properties we'd like for a more general topology tree.
 The end goal of all of this is to have a single, albeit verbose, way to
 get a snapshot of everything that's hardware related in the system
 (basically all the FRUs) and relevant information related to their
-context in broader topology (e.g. [RFD 7 / LLDP](XXX).
+context in broader topology (e.g. [RFD 7 / LLDP](../0007/).
 
 By having the information available, even if it's not in the simplest
 form to consume, it will allow folks to make forward progress on
@@ -190,11 +191,12 @@ information.
 Finally, some devices put random information in their devinfo
 properties. For example:
 
-* The [`igb(7D)`](XXX) driver has a 'nvm-version' which contains the
- version of the NVM image of the device.
+* The [`igb(7D)`](http://illumos.org/man/7d/igb) driver has a
+  'nvm-version' which contains the version of the NVM image of the
+  device.
 
-* The [`i40e(7D)`](XXX) driver has a 'firmware-revision',
-'firmware-build', and 'api-version' property.
+* The [`i40e(7D)`](http://illumos.org/man/7d/i40e) driver has a
+ 'firmware-revision', 'firmware-build', and 'api-version' property.
 
 
 Basically, all of this is currently a jumble. There's no consistency for
@@ -753,6 +755,6 @@ impacted.
 
 ## See Also
 
-[RFD 6 Improving Triton and Manta RAS Infrastructure](XXX)
-[RFD 7 Datalink LLDP and State Tracking](XXX)
-[RFD XXXX DC and Hardware Management Futures](XXX)
+[RFD 6 Improving Triton and Manta RAS Infrastructure](../0006/)
+[RFD 7 Datalink LLDP and State Tracking](../0007/)
+[RFD 88 DC and Hardware Management Futures](../0088/)

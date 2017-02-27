@@ -400,9 +400,9 @@ All of these functions and more are documented in the following series
 of draft manual pages:
 
 * [ddi_ufm(9E)](./man/ddi_ufm.9e.pdf)
-* [ddi_ufm(9F)](XXX)
-* [ddi_ufm_image(9F)](XXX)
-* [ddi_ufm_slot(9F)](XXX)
+* [ddi_ufm(9F)](./man/ddi_ufm.9f.pdf)
+* [ddi_ufm_image(9F)](./man/ddi_ufm_image.9f.pdf)
+* [ddi_ufm_slot(9F)](./man/ddi_ufm_slot.9f.pdf)
 
 ## Transceiver Visibility
 
@@ -556,8 +556,9 @@ typedef struct mac_capab_transceiver {
 For more information on the interface, how drivers will be expected to
 fill out the structures, and additional support functions that are going
 to be provided, first review the draft manual page
-[mac_capab_transceiver(9E)](XXX). The suport functions that drivers have
-are avaiable in [mac_transceiver_info(9F)](XXX).
+[mac_capab_transceiver(9E)](./man/mac_capab_transceiver.9e.pdf). The
+suport functions that drivers have are avaiable in
+[mac_transceiver_info(9F)](./man/mac_transceiver_info.9e.pdf).
 
 The interface that topo and others will use to fetch this information is
 still to be determined and will be a private interface. This may just
@@ -693,7 +694,7 @@ typedef struct mac_capab_led {
 
 For more informatino on the interface, how drivers will be expected to
 fill out the structures, and the behavior of various functions, review
-the draft manual page [mac_capab_led(9E)](XXX).
+the draft manual page [mac_capab_led(9E)](./man/mac_capab_led.9e.pdf).
 
 The interface that topo and others will use to fetch this information is
 still to be determined and will be a private interface. This may just

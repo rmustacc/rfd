@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+table.head, table.foot { width: 100%; }
+td.head-rtitle, td.foot-os { text-align: right; }
+td.head-vol { text-align: center; }
+table.foot td { width: 50%; }
+table.head td { width: 33%; }
+div.spacer { margin: 1em 0; }
+</style>
+<title>
+DDI_UFM(9F)</title>
+</head>
+<body>
+<div class="mandoc">
+<div class="section">
+<h1 id="x4e414d45">NAME</h1> <b class="name">ddi_ufm</b>, <b class="name">ddi_ufm_init</b>, <b class="name">ddi_ufm_is_ioctl</b>, <b class="name">ddi_ufm_ioctl</b>, <b class="name">ddi_ufm_update</b>, <b class="name">ddi_ufm_fini</b> &#8212; <span class="desc">DDI upgradable firmware module interfaces</span></div>
+<div class="section">
+<h1 id="x53594e4f50534953">SYNOPSIS</h1> <b class="includes">#include &lt;<a class="link-includes">sys/ddi_ufm.h</a>&gt;</b><div class="spacer">
+</div>
+<i class="ftype">int</i><br/>
+<b class="fname">ddi_ufm_init</b>(<i class="farg">dev_info_t *dip</i>, <i class="farg">int version</i>, <i class="farg">ddi_ufm_ops_t *ops</i>, <i class="farg">ddi_ufm_handle_t **ufmpp</i>, <i class="farg">void *drv_arg</i>);<div class="spacer">
+</div>
+<i class="ftype">boolean_t</i><br/>
+<b class="fname">ddi_ufm_is_ioctl</b>(<i class="farg">ddi_ufm_handle_t *ufmp</i>, <i class="farg">int cmd</i>);<div class="spacer">
+</div>
+<i class="ftype">int</i><br/>
+<b class="fname">ddi_ufm_ioctl</b>(<i class="farg">ddi_ufm_handle_t *ufmp</i>, <i class="farg">dev_t dev</i>, <i class="farg">int cmd</i>, <i class="farg">intptr_t arg</i>, <i class="farg">int mode</i>, <i class="farg">cred_t *credp</i>, <i class="farg">int *rvalp</i>);<div class="spacer">
+</div>
+<i class="ftype">void</i><br/>
+<b class="fname">ddi_ufm_update</b>(<i class="farg">ddi_ufm_handle_t *ufmp</i>);<div class="spacer">
+</div>
+<i class="ftype">void</i><br/>
+<b class="fname">ddi_ufm_fini</b>(<i class="farg">ddi_ufm_handle_t *ufmp</i>);</div>
+<div class="section">
+<h1 id="x494e54455246414345204c4556454c">INTERFACE LEVEL</h1> <span class="symb">Evolving -</span> This interface is evolving still in illumos. API and ABI stability is not guaranteed.</div>
+<div class="section">
+<h1 id="x504152414d4554455253">PARAMETERS</h1><dl style="margin-top: 0.00em;margin-bottom: 0.00em;" class="list list-tag">
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">dip</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+Pointer to the devices <span class="type">dev_info</span> structure for the specific instance.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">version</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A value which indicates the current revision of the interface that the device supports. Should generally be set to <span class="define">DDI_UFM_CURRENT_VERSION</span>.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">ops</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A pointer to a UFM operations structure. See <a class="link-man">ddi_ufm(9E)</a> for more information.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">ufmp</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A pinter to the opaque handle returned from <b class="fname">ddi_ufm_init</b>().</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">ufmpp</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A pointer to store the opaque handle from <b class="fname">ddi_ufm_init</b>().</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">drv_arg</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A driver specific argument that will be passed to various operations.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">dev</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+Device number.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">cmd</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+Command argument that indicates the operation to perform. See <a class="link-man">ioctl(9E)</a> for more information.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">arg</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+Argument used to pass data between a user program and the kernel.  See <a class="link-man">ioctl(9E)</a> for more information.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">mode</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A bit field that describes the caller. See <a class="link-man">ioctl(9E)</a> for more information.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">credp</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A pointer to the user credential structure. See <a class="link-man">ioctl(9E)</a> for more information.</dd>
+<dt class="list-tag" style="margin-top: 1.00em;">
+<i class="farg">rvalp</i></dt>
+<dd class="list-tag" style="margin-left: 12.00ex;">
+A pointer to a return value. See <a class="link-man">ioctl(9E)</a> for more information.</dd>
+</dl>
+</div>
+<div class="section">
+<h1 id="x4445534352495054494f4e">DESCRIPTION</h1> These functions provide support for initializing and performing various upgradeable firmware module (UFM) operations. For more information, please see <a class="link-man">ddi_ufm(9E)</a>.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_init</b>() function is used to initialize support for the UFM subsystem for a given device. The <i class="farg">dip</i> argument should be the <span class="type">dev_info</span> structure of the specific device. The <i class="farg">version</i> argument represents the current revision of the UFM interface that the driver supports. Drivers inside of illumos should always use <span class="define">DDI_UFM_CURRENT_VERSION</span>. Device drivers which need to bind to a specific revision, should instead pass the latest version: <span class="define">DDI_UFM_VERSION_ONE</span>. The operations structure, <i class="farg">ops</i>, should be filled according to the rules in <a class="link-man">ddi_ufm(9E)</a>. These will be the entry points that device drivers call. The value of <i class="farg">drv_arg</i> will be passed to all of the driver's entry points. When the function returns, <i class="farg">ufmpp</i> will be filled in with a handle that the driver should reference when needing to perform subsequent UFM operations. No UFM entry points will be called until after the driver calls the <b class="fname">ddi_ufm_update</b>() function.<div class="spacer">
+</div>
+When the device driver is detaching or needs to unregistger from the UFM subsystem, then the device driver should call the <b class="fname">ddi_ufm_fini</b>() function with the handle that they obtained during the call to initialize. Note, this function will block and ensure that any outstanding UFM operations are terminated. The driver must not hold any locks that are required in its callbacks across the call to <b class="fname">ddi_ufm_fini</b>().<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_is_ioctl</b>() function is used during a device driver's <a class="link-man">ioctl(9E)</a> entry point to determine if the ioctl command <i class="farg">cmd</i> is a known UFM command. The device driver should not hold any locks that may be used by its UFM entry points while calling this function.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_ioctl</b>() function should be called by a device driver when the <b class="fname">ddi_ufm_ioctl</b>() function returns successfully. It will be used to handle a UFM ioctl on behalf of the device driver. The device driver should simply return the value from this and not perform any other handling of an ioctl. When the device driver calls this, it should ensure that it holds no locks that might be used during the various UFM entry points.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_update</b>() function should be used in two different circumstances. It should be used at the end of a driver's <a class="link-man">attach(9E)</a> endpoint to indicate that it is ready to receive UFM requests. It should also be called whenever the driver believes that the UFM might have changed. This may happen after a device reset or firmware change. Unlike the other functions, this can be called from any context with any locks held, excepting high-level interrupt context which normal device drivers will not have interrupts for.</div>
+<div class="section">
+<h1 id="x52455455524e2056414c554553">RETURN VALUES</h1> Upon successful completion, the <b class="fname">ddi_ufm_init</b>() function returns zero, indicating that it has successfully registered with the UFM subsystem. <i class="farg">ufmpp</i> will be filled in with a pointer to the UFM handle.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_is_ioctl</b>() function will return <span class="define">B_TRUE</span> if the specified command is a UFM ioctl, and <span class="define">B_FALSE</span> otherwise.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_ioctl</b>() function's return value should not be inspected or interpreted by the device driver. Instead, it should be returned umodified to the <a class="link-man">ioctl(9E)</a> function.</div>
+<div class="section">
+<h1 id="x434f4e54455854">CONTEXT</h1> The <b class="fname">ddi_ufm_init</b>() and <b class="fname">ddi_ufm_fini</b>() functions are generally called from a device's <a class="link-man">attach(9E)</a> and <a class="link-man">fini(9E)</a> routines, though they may be called from <span class="symb">user</span> or <span class="symb">kernel</span> context.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_is_ioctl</b>() and <b class="fname">ddi_ufm_ioctl</b>() functions should be called from user context from the same thread that received the <a class="link-man">ioctl(9E)</a> entry point.<div class="spacer">
+</div>
+The <b class="fname">ddi_ufm_update</b>() function may be called from any context except a high-level interrupt handler above lock level.</div>
+<div class="section">
+<h1 id="x53454520414c534f">SEE ALSO</h1> <a class="link-man">attach(9E)</a>, <a class="link-man">ddi_ufm(9E)</a>, <a class="link-man">fini(9E)</a>, <a class="link-man">ioctl(9E)</a></div>
+</div>
+</body>
+</html>
+

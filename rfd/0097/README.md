@@ -327,10 +327,43 @@ want to make sure are in place versus what exists at this moment:
 #### Structure Extensibility
 
 We'd like to make sure that the structures that we're passing in as
-capabilities have some amount of extensibility. We'll need to explore
-this and come up with a concrete proposal. This may be a matter of
-adding both a version and flags fields to the start of the structures.
+capabilities have some amount of extensibility. Rather than using the
+strict version numbering that is used elsewhere, we'd like to propose an
+extensions member which is the first member of the structure.
 
+The idea here is that the OS would set bits that it supports and then
+the driver would and that with the things that it supports. This is a
+variant of the strategy used by the mc_callbacks member of the
+mac_callbacks_t structure. By treating it as a feature negotiation, this
+allows us to even change the structure entirely with additional bits in
+the future.
+
+We've deployed a similar scheme with some of the new capabilities
+introduced as part of [RFD 89 Project Tiresias](XXX). However, we
+haven't had to revise those structures, so it remains to be determined
+how well this scheme ends up working.
+
+In addition, we've gone ahead and reserved a uint_t of flags as the
+second member of each structure to allow us to have a more capabilities
+like set of flags if we want to indicat that they support various
+features along the way. One example of this would be having a driver
+declare that it supports VLAN tagging and stripping.
+
+##### mac_ring_info_t
+
+The mac_ring_info_t structure presents an interesting conundrum as its a
+fixed size structure that is embedded inside of the mac_ring_info_t and
+mac_group_info_t structures. There are a few different options here.
+
+1. Transform the mac_ring_info_t and mac_group_info_t structures into
+having pointers to the mac_intr_t structures.
+
+2. Deal with them in the same extensibility format as we described
+above as part of the other structures.
+
+I believe option one will be better in the long-term. It will cause more
+churn in existing drivers in the gate; hwoever, now seems the time to
+pay this cost.
 
 #### MAC and VLAN Filtering
 
@@ -349,15 +382,15 @@ however, it's important to note the tie between MAC and VLAN pairs. To
 that end, I think the following function signatures should be added 
 
 ```
-typedef int (*mac_add_mac_addr_t)(void *driver, const uint8_t *mac,
+typedef int (*mac_add_mac_addr_t)(mac_group_driver_t driver, const uint8_t *mac,
     uint_t flags)
-typedef int (*mac_rem_mac_addr_t)(void *driver, const uint8_t *mac,
+typedef int (*mac_rem_mac_addr_t)(mac_group_driver_t driver, const uint8_t *mac,
     uint_t flags)
-typedef int (*mac_add_vlan_t)(void *driver, uint16_t vlan, uint_t flags)
-typedef int (*mac_rem_vlan_t)(void *driver, uint16_t vlan, uint_t flags)
-typedef int (*mac_add_mv_filter_t)(void *driver, const uint8_t *mac,
+typedef int (*mac_add_vlan_t)(mac_group_driver_t driver, uint16_t vlan, uint_t flags)
+typedef int (*mac_rem_vlan_t)(mac_group_driver_t driver, uint16_t vlan, uint_t flags)
+typedef int (*mac_add_mv_filter_t)(mac_group_driver_t driver, const uint8_t *mac,
     uint16_t vlan, uint_t flags);
-typedef int (*mac_rem_mv_filter_t)(void *driver, const uint8_t *mac,
+typedef int (*mac_rem_mv_filter_t)(mac_group_driver_t driver, const uint8_t *mac,
     uint16_t vlan, uint_t flags);
 ```
 
@@ -392,7 +425,7 @@ updated with manual pages at a later date.
 
 ```
 typedef struct mac_capab_rings_s {
-	uint_t			mr_version;
+	uint_t			mr_extensions;
 	uint_t			mr_flags;
 	mac_ring_type_t		mr_type;
 	mac_groupt_type_t	mr_group_type;
@@ -405,7 +438,7 @@ typedef struct mac_capab_rings_s {
 } mac_capab_rings_t;
 
 typedef struct mac_group_info_s {
-	uint_t			mgi_version;
+	uint_t			mgi_extensions;
 	uint_t			mgi_flags;
 	mac_group_driver_t	mgi_driver;
 	mac_group_start_t	mgi_start;
@@ -420,8 +453,16 @@ typedef struct mac_group_info_s {
 	mac_rem_mv_filter_t	mgi_remmvf;
 } mac_group_info_t;
 
+typedef struct mac_intr_s {
+        mac_intr_handle_t       mi_handle;
+        mac_intr_enable_t       mi_enable;
+        mac_intr_disable_t      mi_disable;
+        ddi_intr_handle_t       mi_ddi_handle;
+        boolean_t               mi_ddi_shared;
+} mac_intr_t;
+
 typedef struct mac_ring_info_s {
-	uint_t			mri_version;
+	uint_t			mri_extensions;
 	uint_t			mri_flags;
 	mac_ring_driver_t	mri_driver;
 	mac_ring_start_t	mri_start;
@@ -437,3 +478,39 @@ typedef struct mac_ring_info_s {
 #define	mri_tx		mrfunion.send
 #define	mri_poll	mrfunion.poll
 ```
+
+##### MAC Group Interrupt
+
+While, the `mgi_intr` member is present in the `mac_group_info_t`
+structure, it is rarely used by drivers today. At this time, I'm not
+sure how we should advise drivers to fill it out, if at all. For the
+moment I'm going to propose that we keep it in the structure, but do not
+document it in the manual page describing the structure.
+
+##### Ring Polling
+
+Today, ring polling provides a single limit, which is the number of
+bytes that should be polled by the driver. Currently this is a signed
+value; however, negative values have no meaning and in fact, some
+drivers ASSERT that it is not negative. We should likely change this to
+a `size_t` and then also consider adding a third argument which
+indicates the total number of bytes that are used.
+
+##### mac_register_t changes
+
+Today, the `mac_register_t` structure has a member `m_v12n` which is
+used to try and determine whether or not it should even ask the driver
+about caps and shares. This member doesn't seem to provide any value as
+something that a driver has to specify. I propose that drivers should
+not have to specify it and it should be ignored.
+
+##### MAC ring driver argument normalization
+
+Today, there exists a type called the `mac_ring_driver_t`. This value is
+set based on filling in rings. While some of the function callbacks use
+and leverage this, not all of them do. Importantly, neither the
+`mri_send` or `mri_poll` entry points do. I propose that while we're
+here, we normalize this such that they all either use the same `void *`
+or use the `mac_ring_driver_t`. I do not have a strong preference
+towards one or the other and would welcome feedback as to what approach
+we should take.

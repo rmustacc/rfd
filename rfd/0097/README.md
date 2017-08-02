@@ -358,28 +358,29 @@ However, all of the new and modified manual pages are important.
 
 New Manual pages:
 
-* [mac_capab_rings(9e)](./man/mac_capab_rings.9e.pdf)
-* [mac_filter(9e)](./man/mac_filter.9e.pdf)
-* [mgi_start(9e)](./man/mgi_start.9e.pdf)
-* [mi_enable(9e)](./man/mi_enable.9e.pdf)
-* [mr_gget(9e)](./man/mr_gget.9e.pdf)
-* [mr_rget(9e)](./man/mr_rget.9e.pdf)
-* [mri_poll(9e)](./man/mri_poll.9e.pdf)
-* [mri_start(9e)](./man/mri_start.9e.pdf)
-* [mri_stat(9e)](./man/mri_stat.9e.pdf)
+* [mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf)
+* [mac_filter(9E)](./man/mac_filter.9e.pdf) - This defines all of the
+filter entry points.
+* [mgi_start(9E) and mgi_stop(9E)](./man/mgi_start.9e.pdf)
+* [mi_enable(9E) and mi_disable(9E)](./man/mi_enable.9e.pdf)
+* [mr_gget(9E)](./man/mr_gget.9e.pdf)
+* [mr_rget(9E)](./man/mr_rget.9e.pdf)
+* [mri_poll(9E)](./man/mri_poll.9e.pdf)
+* [mri_start(9E)](./man/mri_start.9e.pdf)
+* [mri_stat(9E)](./man/mri_stat.9e.pdf)
 * [mac_group_info(9s)](./man/mac_group_info.9s.pdf)
 * [mac_intr(9s)](./man/mac_intr.9s.pdf)
 * [mac_ring_info(9s)](./man/mac_ring_info.9s.pdf)
 
 Manual pages with new functions added to them:
-* `mri_tx` was added to [mc_tx(9e)](./man/mc_tx.9e.pdf)
+* `mri_tx` was added to [mc_tx(9E)](./man/mc_tx.9e.pdf)
 * `mac_rx_ring` was added to [mac_rx(9f)](./man/mac_rx.9f.pdf)
 * `mac_tx_ring_update` was added to [mac_tx_update(9f)](./man/mac_tx_update.9f.pdf)
 
 Modified existing manual pages:
 
-* [mac(9e)](./man/mac.9e.pdf)
-* [mc_unicst(9e)](./man/mc_unicst.9e.pdf)
+* [mac(9E)](./man/mac.9e.pdf)
+* [mc_unicst(9E)](./man/mc_unicst.9e.pdf)
 * [mac_callbacks(9s)](./man/mac_callbacks.9s.pdf)
 
 All manual pages in one PDF are available [here](./man/all.pdf).

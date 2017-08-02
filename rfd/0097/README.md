@@ -76,7 +76,8 @@ also means that IP addresses can be reused in different VLANs
 (though care still needs to be taken to ensure that there isn't overlap
 if Layer 3 routing is involved).
 
-VLANs can interact with the OS in two different ways:
+VLANs can interact with the OS (or switch or other network device) in
+two different ways:
 
 1. The host OS can be aware of VLANs and explicitly add them to outgoing
 packets and take them into account when receiving packets.
@@ -128,6 +129,12 @@ If it exceeds that number of outstanding packets on a per-ring basis, it
 will transition to polling mode. However, if it cannot transition to
 polling mode, then it will drop packets.
 
+This high watermark is intended to make sure that the system does not
+end up running out of memory due to filling it with packets faster than
+it can be processed. However, once you drop a packet, transports like
+TCP do not react well and back pressure is applied to the system, thus
+slowing down certain aspects of the system.
+
 This ends up creating an artificial limiter on performance of the
 system as we end up dealing with dropped packets, which leads to
 retransmits, etc. While, device that have VLANs associated with them may
@@ -148,18 +155,20 @@ this document in the section `Modern Hardware Capabilities`.
 
 Another nice feature would be able to assign multiple VLANs to a given
 VNIC. While it is tempting to say that we should just use multiple
-logical devices with dladm create-vlan and more, this has a negative,
-particularly on virtualization. In the case of virtualization, every
-logical device that we have to listen on in the guest becomes something
-that we have to pass through to the guest.
+logical devices with dladm create-vlan and more, this has a negative
+effect on our ability to virtualize systems. In the case of
+virtualization, every logical device that we have to listen on in the
+guest becomes something that we have to pass through to the guest.
 
-In this case, we may want to add something like the secondary-macs
+It's worth exploring something that looks a bit like the secondary-macs
 property, but with VLANs.
 
 One interesting question that this all rises is should we instead of
 being just MAC specific, actually do something where we can program and
 specify relationships between a VLAN and a MAC address? This would let
-us say mac-a, vlan-a and mac-b, vlan-b can go to the same ring.
+us say mac-a, vlan-a and mac-b, vlan-b can go to the same ring. This has
+the added benefit of allowing a group to have multiple of such rules,
+but still remain fully classified and able to poll.
 
 ### Explicit VLAN antispoofing rules
 
@@ -203,7 +212,7 @@ listen on all VLANs on a given MAC. The problem is that someone can bind
 to the VLAN Ethertype, at which point it needs to be able to manage and
 handle receiving everything, unlike the filtering.
 
-However, this is a rather *uncommon* operation. Therefore, it's not
+However, this is a rather _uncommon_ operation. Therefore, it's not
 unreasonable to try and do something such that if this happens we end up
 going to a slow path. It may also be possible that we can rig this up
 with most drivers such that it'll still end up being accepted in the
@@ -320,11 +329,66 @@ given filter.
 
 ### GLDv3 Interface Changes
 
-We'd like to stabilize the interfaces for the GLDv3 rings interfaces.
-What we have today is mostly good. There are two major things that we
-want to make sure are in place versus what exists at this moment:
+I'd like to propose a series of new additions to the GLDv3 interfaces
+for rings and groups. These proposals are variants of what exist today,
+designed to take into account some of the aspects of what we've talked
+about already. To facilitate this, manual pages that describe these new
+interfaces have been written up and existing manual pages have been
+modified.
 
-#### Structure Extensibility
+In the next subsection we'll go through all of the new and modified
+manual pages. Afterwards, we'll go through and highlight key differences
+between what exists in the code base today for rings and groups and what
+we're proposing here.
+
+The intent of this phase isn't to immediately jump to stabilization, but
+to get something that makes it easier for us to start working with IHVs
+and updating drivers ourselves to take care of these new interfaces,
+with the understanding that as this evolves, things may change.
+
+Note, a number of things will be called out as existing but not
+documented. This is because they may not provide value at this time or
+we may want to consider how we we define them more.
+
+#### Manual Pages
+
+The core of the documentation can be found in the
+[mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf) manual page.
+However, all of the new and modified manual pages are important.
+
+New Manual pages:
+
+* [mac_capab_rings(9e)](./man/mac_capab_rings.9e.pdf)
+* [mac_filter(9e)](./man/mac_filter.9e.pdf)
+* [mgi_start(9e)](./man/mgi_start.9e.pdf)
+* [mi_enable(9e)](./man/mi_enable.9e.pdf)
+* [mr_gget(9e)](./man/mr_gget.9e.pdf)
+* [mr_rget(9e)](./man/mr_rget.9e.pdf)
+* [mri_poll(9e)](./man/mri_poll.9e.pdf)
+* [mri_start(9e)](./man/mri_start.9e.pdf)
+* [mri_stat(9e)](./man/mri_stat.9e.pdf)
+* [mac_group_info(9s)](./man/mac_group_info.9s.pdf)
+* [mac_intr(9s)](./man/mac_intr.9s.pdf)
+* [mac_ring_info(9s)](./man/mac_ring_info.9s.pdf)
+
+Manual pages with new functions added to them:
+* `mri_tx` was added to [mc_tx(9e)](./man/mc_tx.9e.pdf)
+* `mac_rx_ring` was added to [mac_rx(9f)](./man/mac_rx.9f.pdf)
+* `mac_tx_ring_update` was added to [mac_tx_update(9f)](./man/mac_tx_update.9f.pdf)
+
+Modified existing manual pages:
+
+* [mac(9e)](./man/mac.9e.pdf)
+* [mc_unicst(9e)](./man/mc_unicst.9e.pdf)
+* [mac_callbacks(9s)](./man/mac_callbacks.9s.pdf)
+
+All manual pages in one PDF are available [here](./man/all.pdf).
+
+#### Changes
+
+This section represents proposed concrete changes to the existing structures.
+
+##### Structure Extensibility
 
 We'd like to make sure that the structures that we're passing in as
 capabilities have some amount of extensibility. Rather than using the
@@ -349,21 +413,11 @@ like set of flags if we want to indicat that they support various
 features along the way. One example of this would be having a driver
 declare that it supports VLAN tagging and stripping.
 
-##### mac_ring_info_t
-
-The mac_ring_info_t structure presents an interesting conundrum as its a
-fixed size structure that is embedded inside of the mac_ring_info_t and
-mac_group_info_t structures. There are a few different options here.
-
-1. Transform the mac_ring_info_t and mac_group_info_t structures into
-having pointers to the mac_intr_t structures.
-
-2. Deal with them in the same extensibility format as we described
-above as part of the other structures.
-
-I believe option one will be better in the long-term. It will cause more
-churn in existing drivers in the gate; hwoever, now seems the time to
-pay this cost.
+This impacts the `MAC_CAPAB_RINGS` capabililty structure, the
+`mac_group_info_t` structure and the `mac_ring_info_t` structure. These
+are discussed in [[mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf),
+[mac_group_info(9S)](./man/mac_group_info.9s.pdf), and
+[mac_ring_info(9S)](./man/mac_ring_info.9s.pdf) respectively.
 
 #### MAC and VLAN Filtering
 
@@ -415,77 +469,14 @@ A driver should either support the separate filters or the tuple. We'll
 make it an error when registering the capability if it supports both.
 
 One other thing to point out is that we added a flags argument that will
-likely be NULL by default. This is really to allow us to extend things
+likely be 0 by default. This is really to allow us to extend things
 in the future if there are arguments we want to add, for example, like
 tagging and stripping VLAN information.
 
-The following structures below are slight modifications of the current
-ones that represent what we'd like to move things towards. This will be
-updated with manual pages at a later date.
-
-```
-typedef struct mac_capab_rings_s {
-	uint_t			mr_extensions;
-	uint_t			mr_flags;
-	mac_ring_type_t		mr_type;
-	mac_groupt_type_t	mr_group_type;
-	uint_t			mr_rnum;
-	uint_t			mr_gnum;
-	mac_get_ring_t		mr_rget;
-	mac_get_group_t		mr_gget;
-	mac_group_add_ring_t	mr_gaddring;
-	mac_group_remove_ring_t	mr_gremring;
-} mac_capab_rings_t;
-
-typedef struct mac_group_info_s {
-	uint_t			mgi_extensions;
-	uint_t			mgi_flags;
-	mac_group_driver_t	mgi_driver;
-	mac_group_start_t	mgi_start;
-	mac_group_start_t	mgi_stop;
-	uint_t			mgi_count;
-	mac_intr_t		mgi_intr;
-	mac_add_mac_addr_t	mgi_addmac;	
-	mac_rem_mac_addr_t	mgi_remmac;
-	mac_add_vlan_t		mgi_addvlan;
-	mac_rem_vlan_t		mgi_remvlan;
-	mac_add_mv_filter_t	mgi_addmvf;
-	mac_rem_mv_filter_t	mgi_remmvf;
-} mac_group_info_t;
-
-typedef struct mac_intr_s {
-        mac_intr_handle_t       mi_handle;
-        mac_intr_enable_t       mi_enable;
-        mac_intr_disable_t      mi_disable;
-        ddi_intr_handle_t       mi_ddi_handle;
-        boolean_t               mi_ddi_shared;
-} mac_intr_t;
-
-typedef struct mac_ring_info_s {
-	uint_t			mri_extensions;
-	uint_t			mri_flags;
-	mac_ring_driver_t	mri_driver;
-	mac_ring_start_t	mri_start;
-	mac_ring_stop_t		mri_stop;
-	mac_intr_t		mri_intr;
-	union {
-		mac_ring_send_t send;
-		mac_ring_poll_t poll;
-	} mrfunion;
-	mac_ring_stat_t mri_stat;
-} mac_ring_info_t;
-
-#define	mri_tx		mrfunion.send
-#define	mri_poll	mrfunion.poll
-```
-
-##### MAC Group Interrupt
-
-While, the `mgi_intr` member is present in the `mac_group_info_t`
-structure, it is rarely used by drivers today. At this time, I'm not
-sure how we should advise drivers to fill it out, if at all. For the
-moment I'm going to propose that we keep it in the structure, but do not
-document it in the manual page describing the structure.
+This can be found in greater detail in the `Filters` section in
+[mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf). In addition, the
+changes to the `mac_group_t` structure can be found in
+[mac_group_info(9S)](./man/mac_group_info.9s.pdf).
 
 ##### Ring Polling
 
@@ -496,13 +487,64 @@ drivers ASSERT that it is not negative. We should likely change this to
 a `size_t` and then also consider adding a third argument which
 indicates the total number of bytes that are used.
 
+It is still an open question as to whether or not we should introduce
+the third argument; however, changing the function signature seems like
+an important change. While there's no intention at this time of
+supporting a larger than INT32\_MAX value, it might elimiate a class of
+things that drivers writers may worry about to be truly defensive.
+
 ##### mac_register_t changes
 
 Today, the `mac_register_t` structure has a member `m_v12n` which is
 used to try and determine whether or not it should even ask the driver
 about caps and shares. This member doesn't seem to provide any value as
 something that a driver has to specify. I propose that drivers should
-not have to specify it and it should be ignored.
+not have to specify it and it should be ignored. Drivers will simply be
+asked about both `MAC_CAPAB_RIONGS` and `MAC_CAPAB_SHARES` which was the
+other thing that this was intended to support.
+
+##### Dynamic MAC Groups
+
+The existing MAC framework has a notion of both static and dynamic
+groups. Static groups have a fixed mapping between rings and groups.
+Most drivers that support rings use the static mapping. The only
+expection is the `nxge` driver. Dynamic groups baiscally allow a ring to
+be placed in any group and in fact require that every ring be able to be
+placed in every group.
+
+##### mac\_group\_t mgi\_intr member member
+
+The `mac_group_t` structure has a `mac_intr_t` member embedded as its
+`mgi_intr` member. At this time, this member has not been documented as
+it's not clear that most drivers have a use for it. From my rough
+understanding, it allows some group-level interrupt management and
+synchronization; however, it doesn't really seem to be used by drivers
+in general.
+
+At this time, I wouldn't remove it, but I would not endorse its use.
+
+
+#### Open Questions
+
+This section represents open questions that we still have on the current
+proposed design.  Some of these, like the `mac_intr_t` we should answer
+sooner rather than later.
+
+##### mac_intr_t
+
+The mac_ring_info_t structure presents an interesting conundrum as its a
+fixed size structure that is embedded inside of the mac_ring_info_t and
+mac_group_info_t structures. There are a few different options here.
+
+1. Transform the mac_ring_info_t and mac_group_info_t structures into
+having pointers to the mac_intr_t structures.
+
+2. Deal with them in the same extensibility format as we described
+above as part of the other structures.
+
+I believe option one will be better in the long-term. It will cause more
+churn in existing drivers in the gate; hwoever, now seems the time to
+pay this cost.
 
 ##### MAC ring driver argument normalization
 
@@ -514,3 +556,28 @@ here, we normalize this such that they all either use the same `void *`
 or use the `mac_ring_driver_t`. I do not have a strong preference
 towards one or the other and would welcome feedback as to what approach
 we should take.
+
+##### VLAN Tagging and Stripping
+
+It's worth starting to think about tagging and stripping in the context
+of this and how we would evolve this. I think that we would start by
+introducing two flags that we could assign on the group information
+structure:
+
+1. `MAC_RING_STRIP_VLAN`
+2. `MAC_RING_INSERT_VLAN`
+
+`MAC_RING_STRIP_VLAN` flag indicates that the hardware has the
+capability to strip the VLAN tags when receiving frames on a given
+group. We might leverage this by then passing a flag requesting it on
+the different VLAN filter entry points.
+
+The `MAC_RING_INSERT_VLAN` flag indicates that the hardware has the
+capability to insert a VLAN tag when transmitting frames on the
+given group. It's less clear how this would fit into the broader
+transmit framework. For example, we may want to treat this like the
+checksum information and store it on a per-mblk basis or we may want to
+just say that we'll use this on a fully classified ring.
+
+While neither of these is required at this time, it's useful to think
+through what features like these may look like.

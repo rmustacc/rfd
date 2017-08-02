@@ -19,11 +19,11 @@ state: predraft
 VLANs are a predominant and commonly used aspect of networking. However,
 the illumos networking stack does not often behave as well in the face
 of VLANs. Many of the behaviors and enhancements in the networking stack
-that are used do not apply to VLANs. However, we find that most of our
-customers, and even our own deployments, are almost exclusively filled
-with networks that are based on VLANs. In part, this is due to the ease
-of the creation of devices on a VLAN either through `dladm create-vlan`
-or `dladm create-vnic -v`.
+that are used do not apply to VLAN tagged traffic. However, we find that
+most of our customers, and even our own deployments, are almost
+exclusively filled with networks that leverage VLANs. In part, this is
+due to the ease of using VLANs in Triton through NAPI and the simplicity
+of `dladm create-vnic -v <vlan>`.
 
 ## VLAN Refresher
 
@@ -79,19 +79,20 @@ if Layer 3 routing is involved).
 VLANs can interact with the OS (or switch or other network device) in
 two different ways:
 
-1. The host OS can be aware of VLANs and explicitly add them to outgoing
-packets and take them into account when receiving packets.
+1. The host OS can be aware of VLANs and explicitly add VLAN tags to
+outgoing packets and take them into account when receiving packets.
 
-2. The host OS can be unaware of VLANs and a switch can add and remove
-them.
+2. The host OS can be unaware of VLANs and a switch can add VLAN tags to
+packets sent by the OS and remove them from packets being deliver to the
+OS.
 
 Many switches have rules that say only specific VLANs are allowed to go
-out on specific ports. If the switch encounters a packet with a tag that
-is not in the list, then it will drop it. A switch may have additional
-rules that state a packet that it encounters coming in on a given port
-should be rewritten to include a VLAN tag before sending it out or that
-when a specific VLAN is encountered, it should remove the tag before
-delivering it to the port.
+in of and out of specific ports. If the switch encounters a packet with
+a tag that is not in the list, then it will drop it. A switch may have
+additional rules that state a packet that it encounters coming in on a
+given port should be rewritten to include a VLAN tag before sending it
+out or that when a specific VLAN is encountered, it should remove the
+tag before delivering it to the port.
 
 In Triton, both modes are often used. The admin network in Triton is
 traditionally an `untagged` or `access-mode` network. Here the OS sends
@@ -114,15 +115,18 @@ be tagged with a VLAN and thus its packets rewritten by the illumos
 networking stack, the guest cannot see any VLANs. In addition, if it
 tries to send traffic tagged with a VLAN, it'll end up being dropped.
 
+This facade is maintained by the vnd driver. A KVM zone uses the same
+VNIC as any other zone, which may be optionally tagged with a VLAN tag.
+
 ## Missing and Desired Functionality
 
 This section goes over what functionality that exists in the stack that
 cannot target VLANs and some of the additional follow on effects of
 this that we would like to implement, but have not.
 
-### GLDv3 Ring Polling on VLANs
+### Hardware Ring Polling on VLANs
 
-The MAC driver (aka GLDv3) allows polling on rings that are fully
+The MAC driver (aka GLDv3) allows polling on hardware rings that are fully
 classified. The polling on a ring is important because of the current
 design of MAC. MAC has an inherent high watermark for incoming packets.
 If it exceeds that number of outstanding packets on a per-ring basis, it
@@ -131,15 +135,15 @@ polling mode, then it will drop packets.
 
 This high watermark is intended to make sure that the system does not
 end up running out of memory due to filling it with packets faster than
-it can be processed. However, once you drop a packet, transports like
-TCP do not react well and back pressure is applied to the system, thus
+the system can process them. Once you drop a packet, transports like TCP
+do not react well and back pressure is applied to the system, thus
 slowing down certain aspects of the system.
 
-This ends up creating an artificial limiter on performance of the
-system as we end up dealing with dropped packets, which leads to
-retransmits, etc. While, device that have VLANs associated with them may
-have a group assigned to them (granting one or more rings), which helps
-by providing dedicated resources, MAC does not enable polling.
+This ends up creating an artificial limiter on performance of the system
+as we end up dealing with dropped packets, which leads to retransmits,
+etc. While, devices that have VLANs associated with them may have a
+group assigned to them (granting one or more rings), which helps by
+providing dedicated resources, MAC does not enable polling.
 
 MAC refuses to enable polling on rings with VLANs associated with them
 because it cannot guarantee that the ring is fully filtered. However,
@@ -151,41 +155,14 @@ Many of the devices supported by the GLDv3 support this functionality. A
 summary of their functionality will be summarized and provided later in
 this document in the section `Modern Hardware Capabilities`.
 
-#### Associating additional VLANs with a VNIC
-
-Another nice feature would be able to assign multiple VLANs to a given
-VNIC. While it is tempting to say that we should just use multiple
-logical devices with dladm create-vlan and more, this has a negative
-effect on our ability to virtualize systems. In the case of
-virtualization, every logical device that we have to listen on in the
-guest becomes something that we have to pass through to the guest.
-
-It's worth exploring something that looks a bit like the secondary-macs
-property, but with VLANs.
-
-One interesting question that this all rises is should we instead of
-being just MAC specific, actually do something where we can program and
-specify relationships between a VLAN and a MAC address? This would let
-us say mac-a, vlan-a and mac-b, vlan-b can go to the same ring. This has
-the added benefit of allowing a group to have multiple of such rules,
-but still remain fully classified and able to poll.
-
-### Explicit VLAN antispoofing rules
-
-One thing that'd be good to have on the sending side is an explicit set
-of VLAN antispoofing rules and the ability to potentially allow
-additional VLANs that one can send from. This may want to be phrased as
-specific VLANs or as MAC, VLAN tuples. While there is some amount of
-logic for checking this in MAC today, it isn't quite as strong as the
-other antispoofing options that we have today.
-
 ### MAC DLS Bypass and Software Rings
 
-Another useful feature of MAC right now is called `DLS Bypass`. The DLS
-bypass basically allows all of DLS to be skipped and have frames sent
-directly to ip_input(). This is generally only enabled for IPv4 TCP and
-UDP rings when VLANs are not on the scene. This just adds another
-unnecessary cost for using VLANs.
+Another useful feature of MAC is called `DLS Bypass`. DLS bypass
+basically allows all of the processing that takes place in the DLS
+kernel module to be skipped and have frames sent directly to ip_input().
+This is generally only enabled for IPv4 TCP and UDP rings when VLANs are
+not on the scene. This just adds another unnecessary cost for using
+VLANs.
 
 Most of the time this comes from us enabling the poll capability. For
 example, see the following stack trace:
@@ -242,14 +219,28 @@ ring-classification is also a part of the DLS bypass operation.
 
 All in all, both of these should be important and useful. This really
 ties into GLDv3 polling on rings and how we end up really driving
-packets.
+packets through the system.
+
+### Explicit VLAN anti-spoofing rules
+
+One thing that might be good to have on the sending side is an explicit
+set of VLAN anti-spoofing rules and the ability to potentially allow
+additional VLANs that one can send from. This may want to be phrased as
+specific VLANs or as MAC, VLAN tuples. While there is some amount of
+logic for checking this in MAC today, it isn't quite as strong as the
+other anti-spoofing options that we have today.
+
+This implicitly exists today. Focusing on it may end up making it a bit
+better for cases where we're trying to virtualize systems and we want to
+minimize the number of devices we're virtualizing, while maximizing the
+different traffic they can get on a single device. In essence, this
+could be similar to the secondary-macs property that we have or look at
+even combining the two.
 
 ## Modern Hardware Capabilities
 
 There are a couple of different capabilities that we care about
-regarding VLANs from hardware. We're mentioning all of these
-capabilities, beyond those we're immediately interested in at Joyent to
-make sure that we're properly designing changes. Today most hardware
+regarding VLANs from hardware. Today most hardware
 offers:
 
   * Filtering traffic to a specific ring
@@ -401,12 +392,8 @@ the driver would and that with the things that it supports. This is a
 variant of the strategy used by the mc_callbacks member of the
 mac_callbacks_t structure. By treating it as a feature negotiation, this
 allows us to even change the structure entirely with additional bits in
-the future.
-
-We've deployed a similar scheme with some of the new capabilities
-introduced as part of [RFD 89 Project Tiresias](XXX). However, we
-haven't had to revise those structures, so it remains to be determined
-how well this scheme ends up working.
+the future. This is based on some of the work that was done in [RFD 89
+Project Tiresias](../0089).
 
 In addition, we've gone ahead and reserved a uint_t of flags as the
 second member of each structure to allow us to have a more capabilities
@@ -486,7 +473,7 @@ bytes that should be polled by the driver. Currently this is a signed
 value; however, negative values have no meaning and in fact, some
 drivers ASSERT that it is not negative. We should likely change this to
 a `size_t` and then also consider adding a third argument which
-indicates the total number of bytes that are used.
+indicates the total number of bytes that should be polled.
 
 It is still an open question as to whether or not we should introduce
 the third argument; however, changing the function signature seems like

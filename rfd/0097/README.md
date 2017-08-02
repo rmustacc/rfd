@@ -415,7 +415,7 @@ declare that it supports VLAN tagging and stripping.
 
 This impacts the `MAC_CAPAB_RINGS` capabililty structure, the
 `mac_group_info_t` structure and the `mac_ring_info_t` structure. These
-are discussed in [[mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf),
+are discussed in [mac_capab_rings(9E)](./man/mac_capab_rings.9e.pdf),
 [mac_group_info(9S)](./man/mac_group_info.9s.pdf), and
 [mac_ring_info(9S)](./man/mac_ring_info.9s.pdf) respectively.
 

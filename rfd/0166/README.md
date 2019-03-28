@@ -45,7 +45,7 @@ the system that we need to answer.
 * What speed is the device linked up at?
 
 For example, what generation and link width is a PCIe device at? Is a
-SAS device running at 3.0, 6.0, or 12.0 Gb/s.
+SAS device running at 3.0, 6.0, or 12.0 Gb/s?
 
 * What speeds do the devices support?
 
